@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>NARUTO: NINJA RUN - Shinobi Endless Runner</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Orbitron:wght@600;800;900&family=Yuji+Boku&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="game-container">
+    <!-- Main Game Canvas -->
+    <canvas id="gameCanvas" width="1280" height="720"></canvas>
+
+    <!-- In-Game HUD -->
+    <div id="hud" class="ui-layer hidden">
+      <!-- Player Status Top-Left -->
+      <div class="hud-top-left">
+        <div class="character-card">
+          <div class="character-avatar" id="hud-avatar">
+            <span id="hud-avatar-icon">🍥</span>
+          </div>
+          <div class="bars-container">
+            <div class="bar-row">
+              <span class="bar-label">HP</span>
+              <div class="bar-outer hp-bar">
+                <div class="bar-inner" id="hp-bar-fill" style="width: 100%;"></div>
+                <span class="bar-text" id="hp-text">100 / 100</span>
+              </div>
+            </div>
+            <div class="bar-row">
+              <span class="bar-label">CHAKRA</span>
+              <div class="bar-outer chakra-bar">
+                <div class="bar-inner" id="chakra-bar-fill" style="width: 100%;"></div>
+                <span class="bar-text" id="chakra-text">100 / 100</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Substitution Log Indicator -->
+        <div class="substitution-badge" id="sub-badge" title="Substitution Jutsu (Kawariami)">
+          <span class="sub-icon">🪵</span>
+          <span class="sub-label">KAWARIAMI:</span>
+          <span class="sub-count" id="sub-count">x2</span>
+        </div>
+      </div>
+
+      <!-- Boss Status Top-Center -->
+      <div id="boss-hud" class="boss-hud hidden">
+        <div class="boss-title-row">
+          <span class="boss-danger-tag">BOSS BATTLE</span>
+          <span class="boss-name" id="boss-name">ZABUZA MOMOCHI</span>
+          <span class="boss-sub" id="boss-title">Demon of the Hidden Mist</span>
+        </div>
+        <div class="boss-bar-outer">
+          <div class="boss-bar-fill" id="boss-bar-fill" style="width: 100%;"></div>
+          <span class="boss-hp-text" id="boss-hp-text">500 / 500</span>
+        </div>
+      </div>
+
+      <!-- Distance and Stats Top-Right -->
+      <div class="hud-top-right">
+        <div class="stat-pill score-pill">
+          <span class="stat-icon">⭐</span>
+          <span class="stat-value" id="hud-score">0</span>
+          <span class="stat-unit">PTS</span>
+        </div>
+        <div class="stat-pill distance-pill">
+          <span class="stat-icon">🏃</span>
+          <span class="stat-value" id="hud-distance">0</span>
+          <span class="stat-unit">m</span>
+        </div>
+        <div class="stat-pill scroll-pill">
+          <span class="stat-icon">📜</span>
+          <span class="stat-value" id="hud-scrolls">0</span>
+        </div>
+        <button id="btn-pause" class="hud-btn" title="Pause Game (ESC or P)">⏸️</button>
+        <button id="btn-sound-toggle" class="hud-btn" title="Toggle Sound">🔊</button>
+      </div>
+
+      <!-- Warning Siren Banner -->
+      <div id="boss-warning" class="boss-warning hidden">
+        <div class="warning-stripes"></div>
+        <div class="warning-content">
+          <div class="warning-kanji">警告</div>
+          <div class="warning-main">BOSS INCOMING!</div>
+          <div class="warning-sub" id="warning-boss-name">A POWERFUL FOE APPROACHES</div>
+        </div>
+        <div class="warning-stripes"></div>
+      </div>
+
+      <!-- Combo & Announcement Overlay -->
+      <div id="announcement" class="announcement hidden">
+        <div class="announcement-kanji" id="announcement-kanji">忍</div>
+        <div class="announcement-text" id="announcement-text">RASENGAN!</div>
+      </div>
+
+      <!-- Bottom Jutsu & Action Bar -->
+      <div class="jutsu-bar">
+        <!-- Basic Attack -->
+        <button class="jutsu-btn" id="btn-attack" data-key="J">
+          <div class="jutsu-icon">🗡️</div>
+          <div class="jutsu-info">
+            <span class="jutsu-name">SHURIKEN</span>
+            <span class="jutsu-cost free">FREE</span>
+          </div>
+          <span class="key-badge">[J] / Click</span>
+        </button>
+
+        <!-- Jutsu 1 -->
+        <button class="jutsu-btn" id="btn-jutsu1" data-key="K">
+          <div class="jutsu-icon" id="j1-icon">🌀</div>
+          <div class="jutsu-info">
+            <span class="jutsu-name" id="j1-name">CLONE DASH</span>
+            <span class="jutsu-cost" id="j1-cost">30 CP</span>
+          </div>
+          <div class="cooldown-overlay" id="j1-cooldown"></div>
+          <span class="key-badge">[K]</span>
+        </button>
+
+        <!-- Jutsu 2 -->
+        <button class="jutsu-btn" id="btn-jutsu2" data-key="L">
+          <div class="jutsu-icon" id="j2-icon">🔵</div>
+          <div class="jutsu-info">
+            <span class="jutsu-name" id="j2-name">RASENGAN</span>
+            <span class="jutsu-cost" id="j2-cost">50 CP</span>
+          </div>
+          <div class="cooldown-overlay" id="j2-cooldown"></div>
+          <span class="key-badge">[L]</span>
+        </button>
+
+        <!-- Ultimate Jutsu -->
+        <button class="jutsu-btn ultimate-btn" id="btn-ultimate" data-key="U">
+          <div class="jutsu-icon" id="ult-icon">🦊</div>
+          <div class="jutsu-info">
+            <span class="jutsu-name" id="ult-name">NINE-TAILS</span>
+            <span class="jutsu-cost" id="ult-cost">100 CP</span>
+          </div>
+          <div class="cooldown-overlay" id="ult-cooldown"></div>
+          <span class="key-badge">[U]</span>
+        </button>
+
+        <!-- Mobile Touch Jump/Slide Controls -->
+        <div class="mobile-movement-controls">
+          <button class="action-btn jump-btn" id="btn-jump">
+            <span>⬆️ JUMP</span>
+            <span class="key-hint">[W / SPACE]</span>
+          </button>
+          <button class="action-btn slide-btn" id="btn-slide">
+            <span>⬇️ SLIDE</span>
+            <span class="key-hint">[S / DOWN]</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Start / Main Menu Screen -->
+    <div id="main-menu" class="ui-layer menu-layer">
+      <div class="menu-decor top-clouds"></div>
+      <div class="title-container">
+        <div class="kanji-watermark">木ノ葉隠れの里</div>
+        <h2 class="sub-heading">SHINOBI CHRONICLES</h2>
+        <h1 class="main-title">
+          <span class="title-orange">NARUTO</span>
+          <span class="title-slash">/</span>
+          <span class="title-gold">NINJA RUN</span>
+        </h1>
+        <p class="tagline">Believe it! Run, leap, unleash secret jutsu, and defeat legendary Akatsuki & Mist bosses!</p>
+      </div>
+
+      <!-- Active Selected Ninja Showcase -->
+      <div class="selected-ninja-preview">
+        <div class="ninja-portrait-circle" id="menu-ninja-portrait">
+          <span id="menu-ninja-emoji">🍥</span>
+        </div>
+        <div class="ninja-preview-info">
+          <h3 id="menu-ninja-name">NARUTO UZUMAKI</h3>
+          <p id="menu-ninja-trait">Special: Nine-Tails Regeneration & Shadow Clones</p>
+        </div>
+      </div>
+
+      <!-- Menu Actions -->
+      <div class="menu-actions">
+        <button id="btn-start-game" class="shinobi-btn primary-btn">
+          <span class="btn-kanji">走</span>
+          <span class="btn-text">START RUN (SPACE)</span>
+        </button>
+        <button id="btn-open-select" class="shinobi-btn secondary-btn">
+          <span class="btn-kanji">忍</span>
+          <span class="btn-text">CHOOSE NINJA</span>
+        </button>
+        <button id="btn-open-dojo" class="shinobi-btn secondary-btn">
+          <span class="btn-kanji">巻</span>
+          <span class="btn-text">SCROLL DOJO / UPGRADES</span>
+        </button>
+        <button id="btn-open-help" class="shinobi-btn secondary-btn">
+          <span class="btn-kanji">教</span>
+          <span class="btn-text">HOW TO PLAY</span>
+        </button>
+      </div>
+
+      <!-- Best Scores Footer -->
+      <div class="high-score-banner">
+        <span>🏆 BEST DISTANCE: <strong id="best-distance">0</strong>m</span>
+        <span>⭐ HIGH SCORE: <strong id="high-score">0</strong></span>
+        <span>📜 SAVED SCROLLS: <strong id="total-scrolls">0</strong></span>
+      </div>
+    </div>
+
+    <!-- Character Selection Modal -->
+    <div id="character-modal" class="ui-layer modal-layer hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2>SELECT YOUR SHINOBI</h2>
+          <button class="modal-close" id="btn-close-select">✖</button>
+        </div>
+        <div class="characters-grid" id="characters-container">
+          <!-- Dynamically populated character cards -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Scroll Dojo / Upgrades Modal -->
+    <div id="dojo-modal" class="ui-layer modal-layer hidden">
+      <div class="modal-card dojo-card">
+        <div class="modal-header">
+          <h2>ICHIRAKU & SCROLL DOJO</h2>
+          <div class="dojo-scroll-balance">
+            <span>AVAILABLE SCROLLS: </span>
+            <strong id="dojo-scroll-count">0</strong> 📜
+          </div>
+          <button class="modal-close" id="btn-close-dojo">✖</button>
+        </div>
+        <div class="upgrades-list" id="upgrades-container">
+          <!-- Upgrades rendered here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- How to Play / Controls Modal -->
+    <div id="help-modal" class="ui-layer modal-layer hidden">
+      <div class="modal-card help-card">
+        <div class="modal-header">
+          <h2>HOW TO PLAY & JUTSU GUIDE</h2>
+          <button class="modal-close" id="btn-close-help">✖</button>
+        </div>
+        <div class="help-content">
+          <div class="help-section">
+            <h3>🎮 MOVEMENT & ATTACK</h3>
+            <table class="controls-table">
+              <tr>
+                <td><kbd>W</kbd> or <kbd>▲</kbd> or <kbd>SPACE</kbd></td>
+                <td><strong>JUMP</strong> (Press again in mid-air to <strong>DOUBLE JUMP</strong>)</td>
+              </tr>
+              <tr>
+                <td><kbd>S</kbd> or <kbd>▼</kbd></td>
+                <td><strong>SLIDE / DUCK</strong> under high blades, kunai tripwires & flying jutsu</td>
+              </tr>
+              <tr>
+                <td><kbd>J</kbd> or <strong>Left Click</strong></td>
+                <td><strong>THROW SHURIKEN</strong> to destroy obstacles, enemy clones & damage bosses</td>
+              </tr>
+              <tr>
+                <td><kbd>K</kbd></td>
+                <td><strong>JUTSU 1</strong> (e.g. Shadow Clones, Fireball, Ground Slam)</td>
+              </tr>
+              <tr>
+                <td><kbd>L</kbd></td>
+                <td><strong>JUTSU 2</strong> (e.g. Rasengan, Chidori, Raikiri, Healing Palm)</td>
+              </tr>
+              <tr>
+                <td><kbd>U</kbd></td>
+                <td><strong>ULTIMATE SECRET JUTSU</strong> (Full Chakra required!)</td>
+              </tr>
+              <tr>
+                <td><kbd>ESC</kbd> or <kbd>P</kbd></td>
+                <td><strong>PAUSE / RESUME</strong></td>
+              </tr>
+            </table>
+          </div>
+
+          <div class="help-section">
+            <h3>🍥 ITEMS & SURVIVAL</h3>
+            <div class="item-guide-grid">
+              <div class="item-guide-item">
+                <span class="item-icon">🍜</span>
+                <div>
+                  <strong>Ichiraku Ramen</strong>
+                  <p>Restores 35 HP instantly!</p>
+                </div>
+              </div>
+              <div class="item-guide-item">
+                <span class="item-icon">📜</span>
+                <div>
+                  <strong>Ninja Scroll</strong>
+                  <p>Gives currency to unlock characters and power upgrades in the Dojo.</p>
+                </div>
+              </div>
+              <div class="item-guide-item">
+                <span class="item-icon">🪵</span>
+                <div>
+                  <strong>Substitution Log</strong>
+                  <p>Kawariami Jutsu automatically activates on hit, nullifying damage!</p>
+                </div>
+              </div>
+              <div class="item-guide-item">
+                <span class="item-icon">🌀</span>
+                <div>
+                  <strong>Chakra Orb</strong>
+                  <p>Instantly refills 40 Chakra points.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="help-section">
+            <h3>👹 BOSS BATTLES</h3>
+            <p>Every few hundred meters, powerful ninja bosses approach (Zabuza, Gaara, Orochimaru, Pain, Madara). Dodge their signature attacks and strike them with Shurikens and Jutsu to defeat them and claim legendary bounties!</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pause Menu Overlay -->
+    <div id="pause-menu" class="ui-layer menu-layer hidden">
+      <div class="pause-box">
+        <h2 class="pause-title">MISSION PAUSED</h2>
+        <div class="pause-actions">
+          <button id="btn-resume" class="shinobi-btn primary-btn">RESUME MISSION</button>
+          <button id="btn-restart" class="shinobi-btn secondary-btn">RESTART RUN</button>
+          <button id="btn-quit" class="shinobi-btn secondary-btn">MAIN MENU</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="game-over" class="ui-layer menu-layer hidden">
+      <div class="game-over-box">
+        <div class="defeat-kanji">敗北</div>
+        <h2 class="game-over-title">MISSION FAILED</h2>
+        <p class="game-over-quote" id="game-over-quote">"Never give up on your ninja way!"</p>
+
+        <div class="results-grid">
+          <div class="result-card">
+            <span class="result-label">DISTANCE</span>
+            <span class="result-val" id="result-distance">0 m</span>
+          </div>
+          <div class="result-card">
+            <span class="result-label">SCORE</span>
+            <span class="result-val" id="result-score">0</span>
+          </div>
+          <div class="result-card">
+            <span class="result-label">BOSSES DEFEATED</span>
+            <span class="result-val" id="result-bosses">0</span>
+          </div>
+          <div class="result-card">
+            <span class="result-label">SCROLLS FOUND</span>
+            <span class="result-val" id="result-scrolls">+0</span>
+          </div>
+        </div>
+
+        <div class="game-over-actions">
+          <button id="btn-play-again" class="shinobi-btn primary-btn">
+            <span class="btn-kanji">再</span>
+            <span class="btn-text">RUN AGAIN (SPACE)</span>
+          </button>
+          <button id="btn-game-over-menu" class="shinobi-btn secondary-btn">
+            <span class="btn-kanji">戻</span>
+            <span class="btn-text">MAIN MENU</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Scripts -->
+  <script src="js/audio.js"></script>
+  <script src="js/particles.js"></script>
+  <script src="js/sprites.js"></script>
+  <script src="js/entities.js"></script>
+  <script src="js/bosses.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
